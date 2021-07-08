@@ -100,6 +100,11 @@ endif
 
 " Parse Bullet Type -------------------------------------------  {{{
 fun! s:parse_bullet(line_num, line_text)
+  let l:kinds = s:match_all_items(a:line_text)
+  return s:map(l:kinds, 'extend(v:val, { "starting_at_line_num": ' . a:line_num . ' })')
+endfun
+
+fun! s:match_all_items(line_text)
   let l:kinds = s:filter(
         \ [
         \  s:match_bullet_list_item(a:line_text),
@@ -111,7 +116,11 @@ fun! s:parse_bullet(line_num, line_text)
         \ '!empty(v:val)'
         \ )
 
-  return s:map(l:kinds, 'extend(v:val, { "starting_at_line_num": ' . a:line_num . ' })')
+  return l:kinds
+endfun
+
+fun! bullets#is_part_of_a_bullet_list()
+  return s:match_all_items(getline('.')) != []
 endfun
 
 fun! s:match_numeric_list_item(input_text)
@@ -495,6 +504,10 @@ fun! s:is_at_eol()
 endfun
 
 command! InsertNewBullet call <SID>insert_new_bullet()
+
+inoremap <silent> <Plug>(bullets-insert-new-bullet) <C-]><C-R>=<SID>insert_new_bullet()<cr>
+nnoremap <silent> <Plug>(bullets-insert-new-bullet-normal) :call <SID>insert_new_bullet()<cr>
+
 " --------------------------------------------------------- }}}
 
 " Checkboxes ---------------------------------------------- {{{
@@ -988,10 +1001,10 @@ augroup TextBulletsMappings
 
   if g:bullets_set_mappings
     " automatic bullets
-    call s:add_local_mapping('inoremap', '<cr>', '<C-]><C-R>=<SID>insert_new_bullet()<cr>')
+    call s:add_local_mapping('imap', '<cr>', '<Plug>(bullets-insert-new-bullet)')
     call s:add_local_mapping('inoremap', '<C-cr>', '<cr>')
 
-    call s:add_local_mapping('nnoremap', 'o', ':call <SID>insert_new_bullet()<cr>')
+    call s:add_local_mapping('nmap', 'o', '<Plug>(bullets-insert-new-bullet-normal)')
 
     " Renumber bullet list
     call s:add_local_mapping('vnoremap', 'gN', ':RenumberSelection<cr>')
